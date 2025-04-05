@@ -1,0 +1,40 @@
+name: Release
+on:
+  push:
+    tags: 
+      - 'v*'  # 当推送的标签以 "v" 开头时触发（如 v1.0.0）
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]  # 多平台并行打包
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js (示例：Electron项目)
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Build package
+        run: npm run build  # 根据项目配置打包命令（如 electron-builder）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 自动上传到 Releases
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.exe      # Windows 可执行文件
+            dist/*.dmg      # macOS 安装包
+            dist/*.deb      # Linux 包
